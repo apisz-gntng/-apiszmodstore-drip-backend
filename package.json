@@ -1,0 +1,9 @@
+{
+  "name": "apiszmodstore-drip-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend proxy for APISZMODSTORE to keep the DRIP API key secret",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
