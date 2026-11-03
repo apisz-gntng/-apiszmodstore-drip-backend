@@ -26,7 +26,10 @@ export default {
       });
 
     if (origin && origin !== SITE_ORIGIN) {
-      return json({ ok: false, error: "Origin tidak diizinkan" }, 403);
+      return json(
+        { ok: false, error: "Origin tidak diizinkan" },
+        403
+      );
     }
 
     if (request.method === "OPTIONS") {
@@ -44,7 +47,10 @@ export default {
     }
 
     if (!["GET", "POST"].includes(request.method)) {
-      return json({ ok: false, error: "Method tidak diizinkan" }, 405);
+      return json(
+        { ok: false, error: "Method tidak diizinkan" },
+        405
+      );
     }
 
     const path = url.pathname;
@@ -57,27 +63,38 @@ export default {
       path === "/api/v1/pricing" ||
       path === "/api/v1/stock" ||
       path === "/api/v1/orders" ||
-      (request.method === "GET" &&
-        /^\/api\/v1\/orders\/[^/]+$/.test(path));
+      (
+        request.method === "GET" &&
+        /^\/api\/v1\/orders\/[^/]+$/.test(path)
+      );
 
     if (!allowed) {
-      return json({ ok: false, error: "Endpoint tidak diizinkan" }, 404);
+      return json(
+        { ok: false, error: "Endpoint tidak diizinkan" },
+        404
+      );
     }
 
-    if (request.method === "POST" && path !== "/api/v1/orders") {
-      return json({
-        ok: false,
-        error: "POST tidak diizinkan untuk endpoint ini"
-      }, 405);
+    if (
+      request.method === "POST" &&
+      path !== "/api/v1/orders"
+    ) {
+      return json(
+        {
+          ok: false,
+          error: "POST tidak diizinkan untuk endpoint ini"
+        },
+        405
+      );
     }
 
-    // Jangan pernah mencatat nilai API key ke log.
-    console.log("DRIP_API_KEY tersedia:", Boolean(env?.DRIP_API_KEY));
+    // Secret runtime yang tersedia di Cloudflare.
+    const apiKey = env?.API_KEY_DRIP;
 
-    if (!env?.DRIP_API_KEY) {
+    if (!apiKey) {
       return json({
         ok: false,
-        error: "Secret tidak terbaca oleh runtime Worker",
+        error: "Secret API_KEY_DRIP tidak tersedia",
         availableBindings: Object.keys(env || {})
       }, 500);
     }
@@ -85,9 +102,12 @@ export default {
     let body;
 
     if (request.method === "POST") {
-      const contentType = request.headers.get("Content-Type") || "";
+      const contentType =
+        request.headers.get("Content-Type") || "";
 
-      if (!contentType.toLowerCase().includes("application/json")) {
+      if (
+        !contentType.toLowerCase().includes("application/json")
+      ) {
         return json({
           ok: false,
           error: "Content-Type harus application/json"
@@ -97,7 +117,10 @@ export default {
       try {
         body = await request.json();
       } catch {
-        return json({ ok: false, error: "JSON request tidak valid" }, 400);
+        return json(
+          { ok: false, error: "JSON request tidak valid" },
+          400
+        );
       }
     }
 
@@ -107,7 +130,7 @@ export default {
 
     try {
       const headers = {
-        Authorization: `Bearer ${env.DRIP_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         Accept: "application/json"
       };
 
@@ -128,7 +151,8 @@ export default {
         headers: {
           ...corsHeaders,
           "Content-Type":
-            upstream.headers.get("Content-Type") || "application/json"
+            upstream.headers.get("Content-Type") ||
+            "application/json"
         }
       });
     } catch {
