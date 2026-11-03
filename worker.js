@@ -1,3 +1,4 @@
+
 const DRIP_BASE_URL = "https://dripclientofficial.dev";
 const SITE_ORIGIN = "https://apiszmod-site.lagasawahakun.workers.dev";
 
@@ -9,7 +10,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": SITE_ORIGIN,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Max-Age": "86400",
       "Cache-Control": "no-store",
       "Vary": "Origin"
@@ -46,7 +47,6 @@ export default {
       return json({ ok: false, error: "Method tidak diizinkan" }, 405);
     }
 
-    // Hanya endpoint DRIP yang diizinkan.
     const path = url.pathname;
 
     const allowed =
@@ -64,19 +64,26 @@ export default {
       return json({ ok: false, error: "Endpoint tidak diizinkan" }, 404);
     }
 
-    // Pembuatan pesanan hanya melalui POST.
     if (request.method === "POST" && path !== "/api/v1/orders") {
-      return json({ ok: false, error: "POST tidak diizinkan untuk endpoint ini" }, 405);
+      return json({
+        ok: false,
+        error: "POST tidak diizinkan untuk endpoint ini"
+      }, 405);
     }
 
-    if (!env.DRIP_API_KEY) {
-  return json({
-    ok: false,
-    error: "Secret tidak terbaca",
-    availableBindings: Object.keys(env)
-  }, 500);
-}
-    
+    // Catat hanya keberadaan Secret, bukan nilainya.
+    console.log(
+      "DRIP_API_KEY tersedia:",
+      Boolean(env && env.DRIP_API_KEY)
+    );
+
+    if (!env || !env.DRIP_API_KEY) {
+      return json({
+        ok: false,
+        error: "Secret tidak terbaca oleh runtime Worker"
+      }, 500);
+    }
+
     let body;
 
     if (request.method === "POST") {
@@ -92,7 +99,10 @@ export default {
       try {
         body = await request.json();
       } catch {
-        return json({ ok: false, error: "JSON request tidak valid" }, 400);
+        return json({
+          ok: false,
+          error: "JSON request tidak valid"
+        }, 400);
       }
     }
 
@@ -102,8 +112,8 @@ export default {
 
     try {
       const upstreamHeaders = {
-        "Authorization": `Bearer ${env.DRIP_API_KEY}`,
-        "Accept": "application/json"
+        Authorization: `Bearer ${env.DRIP_API_KEY}`,
+        Accept: "application/json"
       };
 
       if (request.method === "POST") {
@@ -125,7 +135,8 @@ export default {
         headers: {
           ...corsHeaders,
           "Content-Type":
-            upstream.headers.get("Content-Type") || "application/json"
+            upstream.headers.get("Content-Type") ||
+            "application/json; charset=utf-8"
         }
       });
     } catch {
