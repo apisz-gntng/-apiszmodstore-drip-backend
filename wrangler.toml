@@ -1,3 +1,7 @@
 name = "apiszmodstore-drip-proxy"
 main = "worker.js"
 compatibility_date = "2026-11-02"
+keep_vars = true
+
+[secrets]
+required = ["DRIP_API_KEY"]
