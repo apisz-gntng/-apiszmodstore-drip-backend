@@ -71,16 +71,14 @@ export default {
       }, 405);
     }
 
-    // Catat hanya keberadaan Secret, bukan nilainya.
-    console.log(
-      "DRIP_API_KEY tersedia:",
-      Boolean(env && env.DRIP_API_KEY)
-    );
+    // Jangan pernah mencatat nilai API key ke log.
+    console.log("DRIP_API_KEY tersedia:", Boolean(env?.DRIP_API_KEY));
 
-    if (!env || !env.DRIP_API_KEY) {
+    if (!env?.DRIP_API_KEY) {
       return json({
         ok: false,
-        error: "Secret tidak terbaca oleh runtime Worker"
+        error: "Secret tidak terbaca oleh runtime Worker",
+        availableBindings: Object.keys(env || {})
       }, 500);
     }
 
@@ -99,10 +97,7 @@ export default {
       try {
         body = await request.json();
       } catch {
-        return json({
-          ok: false,
-          error: "JSON request tidak valid"
-        }, 400);
+        return json({ ok: false, error: "JSON request tidak valid" }, 400);
       }
     }
 
@@ -111,32 +106,29 @@ export default {
     target.search = url.search;
 
     try {
-      const upstreamHeaders = {
+      const headers = {
         Authorization: `Bearer ${env.DRIP_API_KEY}`,
         Accept: "application/json"
       };
 
       if (request.method === "POST") {
-        upstreamHeaders["Content-Type"] = "application/json";
+        headers["Content-Type"] = "application/json";
       }
 
       const upstream = await fetch(target.toString(), {
         method: request.method,
-        headers: upstreamHeaders,
+        headers,
         ...(request.method === "POST"
           ? { body: JSON.stringify(body) }
           : {})
       });
 
-      const responseBody = await upstream.text();
-
-      return new Response(responseBody, {
+      return new Response(await upstream.text(), {
         status: upstream.status,
         headers: {
           ...corsHeaders,
           "Content-Type":
-            upstream.headers.get("Content-Type") ||
-            "application/json; charset=utf-8"
+            upstream.headers.get("Content-Type") || "application/json"
         }
       });
     } catch {
