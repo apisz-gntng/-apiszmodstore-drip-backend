@@ -70,12 +70,13 @@ export default {
     }
 
     if (!env.DRIP_API_KEY) {
-      return json({
-        ok: false,
-        error: "Secret DRIP_API_KEY belum tersedia pada deployment ini"
-      }, 500);
-    }
-
+  return json({
+    ok: false,
+    error: "Secret tidak terbaca",
+    availableBindings: Object.keys(env)
+  }, 500);
+}
+    
     let body;
 
     if (request.method === "POST") {
